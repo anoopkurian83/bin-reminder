@@ -1,0 +1,4 @@
+bin_reminder.zip
+__pycache__/
+*.pyc
+.env
