@@ -1,18 +1,17 @@
 export default {
   async fetch(request) {
-    if (request.method !== "POST") {
-      return new Response("Method not allowed", { status: 405 });
-    }
+    const url = new URL(request.url);
 
-    const body = await request.text();
+    // Forward the path (/trigger or /announce) and query string to Voice Monkey
+    const vmUrl = "https://api-v3.voicemonkey.io" + url.pathname + url.search;
 
-    const response = await fetch("https://api-v3.voicemonkey.io/announce", {
-      method: "POST",
+    const response = await fetch(vmUrl, {
+      method: request.method,
       headers: {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       },
-      body: body,
+      body: request.method === "POST" ? await request.text() : undefined,
     });
 
     const text = await response.text();

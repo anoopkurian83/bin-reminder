@@ -4,9 +4,10 @@ Run once each evening. If tomorrow (UK time) has a collection in bins.csv,
 it announces it on the Echo Show with speech, a bin image and large text.
 
 Environment variables:
-  VM_TOKEN        Voice Monkey API token (Console -> Settings -> API)
+  VM_TOKEN        Voice Monkey API token (Console -> API Tokens)
   VM_DEVICE       Voice Monkey speaker device ID for the Echo Show
   IMAGE_BASE_URL  Public HTTPS folder holding grey.png, green.png ... (no trailing slash)
+  VM_PROXY_URL    Cloudflare Worker URL (proxies to Voice Monkey to avoid IP blocks)
   DRY_RUN=1       Print the request instead of sending it
   FORCE_DATE      Pretend today is this date (YYYY-MM-DD), for testing
 """
@@ -27,7 +28,7 @@ try:
 except ImportError:
     _SSL_CONTEXT = ssl.create_default_context()
 
-API_URL = os.environ.get("VM_PROXY_URL") or "https://api-v3.voicemonkey.io/announce"
+API_URL = os.environ.get("VM_PROXY_URL", "").rstrip("/") + "/announce" if os.environ.get("VM_PROXY_URL") else "https://api-v3.voicemonkey.io/announce"
 UK = ZoneInfo("Europe/London")
 CSV_PATH = Path(__file__).with_name("bins.csv")
 
@@ -67,13 +68,11 @@ def announce(speech: str, text: str, image: str | None) -> None:
         "device": os.environ.get("VM_DEVICE", ""),
         "speech": speech,
         "chime": "soundbank://soundlibrary/alarms/beeps_and_bloops/bell_02",
-        "no_bg": True,
     }
-    # The bin images already contain their own text, so only overlay
-    # large text when there is no image to show.
     if image:
-        payload["image"] = image
+        payload["background_image"] = image
     else:
+        payload["no_bg"] = True
         payload["text_display"] = text
 
     if os.environ.get("DRY_RUN") == "1":
@@ -114,7 +113,6 @@ def main() -> None:
 
     speech, text = build_message(bins)
     base = os.environ.get("IMAGE_BASE_URL", "").rstrip("/")
-    # Show the first bin's picture; the text overlay lists every bin.
     image = f"{base}/{bins[0]}.png" if base else None
     print(f"{today}: collection tomorrow -> {bins}")
     announce(speech, text, image)
