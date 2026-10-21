@@ -68,11 +68,11 @@ def announce(speech: str, text: str, image: str | None) -> None:
         "device": os.environ.get("VM_DEVICE", ""),
         "speech": speech,
         "chime": "soundbank://soundlibrary/alarms/beeps_and_bloops/bell_02",
+        "no_bg": True,
     }
     if image:
-        payload["background_image"] = image
+        payload["image"] = image
     else:
-        payload["no_bg"] = True
         payload["text_display"] = text
 
     if os.environ.get("DRY_RUN") == "1":
